@@ -1,4 +1,4 @@
-//Flutter project created by Filip Drincic, e-mail: gusfildri@student.gu.se. Course TIG-333-VT at GU
+//Flutter project created by Filip Drincic, e-mail: gusfildri@student.gu.se. Course TIG-333-VT
 
 import 'package:flutter/material.dart';
 
