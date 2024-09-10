@@ -1,4 +1,5 @@
-// Flutter project created by Filip Drincic, TIG333 course at GU, application: ToDo
+// Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
+// ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
 import 'package:flutter/material.dart';
 
 void main() {
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
       title: 'TIG333 TODO',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200], // Ändra bakgrundsfärgen här
+        scaffoldBackgroundColor: Colors.grey[200], // Changes background color here
       ),
       home: TodoListScreen(),
     );
@@ -36,7 +37,7 @@ class TodoListScreen extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
-              // Placeholder för filterknapp (ingen funktionalitet i Steg 1)
+              // Placeholder for filter button (no functionality in step 1)
             },
           ),
         ],
@@ -45,7 +46,7 @@ class TodoListScreen extends StatelessWidget {
         children: [
           _buildTodoItem('Write a book', false),
           _buildTodoItem('Do homework', false),
-          _buildTodoItem('Tidy room', true), // Visuellt klar
+          _buildTodoItem('Tidy room', true), // Visually done
           _buildTodoItem('Watch TV', false),
           _buildTodoItem('Nap', false),
           _buildTodoItem('Shop groceries', false),
@@ -69,9 +70,9 @@ class TodoListScreen extends StatelessWidget {
     return ListTile(
       leading: Checkbox(
         value: isDone,
-        activeColor: Colors.lightBlue, // Ändra checkboxens färg till blå
+        activeColor: Colors.lightBlue, // Changes the checkbox color to light blue from default
         onChanged: (value) {
-          // Ingen funktionalitet i Steg 1
+          // No functionality in step 1
         },
       ),
       title: Text(
@@ -83,7 +84,7 @@ class TodoListScreen extends StatelessWidget {
       trailing: IconButton(
         icon: Icon(Icons.close),
         onPressed: () {
-          // Ingen funktionalitet i Steg 1
+          // No functionality in step 1
         },
       ),
     );
@@ -128,7 +129,7 @@ class AddTodoScreen extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Ingen funktionalitet i Steg 1
+                  // No functionality in step 1. Will be added later
                 },
                 child: Text('+ ADD'),
               ),
