@@ -1,4 +1,5 @@
 //Flutter project created by Filip Drincic, e-mail: gusfildri@student.gu.se. Course TIG-333-VT at GU
+//ToDo is a simple application using layouts and widgets. See ListViews och Containers
 
 import 'package:flutter/material.dart';
 
@@ -37,7 +38,7 @@ Widget build(BuildContext context) {
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
-              // Placeholder för filterknapp (ingen funktionalitet i Steg 1)
+              // Placeholder for filter button (no functionality in step 1)
             },
           ),
         ],
@@ -46,7 +47,7 @@ Widget build(BuildContext context) {
         children: [
           _buildTodoItem('Write a book', false),
           _buildTodoItem('Do homework', false),
-          _buildTodoItem('Tidy room', true), // Visuellt klar
+          _buildTodoItem('Tidy room', true), // visually done
           _buildTodoItem('Watch TV', false),
           _buildTodoItem('Nap', false),
           _buildTodoItem('Shop groceries', false),
@@ -70,9 +71,9 @@ Widget build(BuildContext context) {
     return ListTile(
       leading: Checkbox(
         value: isDone,
-        activeColor: Colors.lightBlue, // Ändra checkboxens färg till blå
+        activeColor: Colors.lightBlue,  // Changes the checkbox color to light blue from default
         onChanged: (value) {
-          // Ingen funktionalitet i Steg 1
+          // No functionality in step 1
         },
       ),
       title: Text(
@@ -84,7 +85,7 @@ Widget build(BuildContext context) {
       trailing: IconButton(
         icon: Icon(Icons.close),
         onPressed: () {
-          // Ingen funktionalitet i Steg 1
+          // No functionality in step 1
         },
       ),
     );
@@ -129,7 +130,7 @@ class AddTodoScreen extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Ingen funktionalitet i Steg 1
+                  // No functionality in step 1. Will be added later
                 },
                 child: Text('+ ADD'),
               ),
