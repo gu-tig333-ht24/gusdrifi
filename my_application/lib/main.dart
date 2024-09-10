@@ -1,5 +1,5 @@
 //Flutter project created by Filip Drincic, e-mail: gusfildri@student.gu.se. Course TIG-333-VT at GU
-//ToDo is a simple application using layouts and widgets. See ListViews och Containers
+//ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
 
 import 'package:flutter/material.dart';
 
