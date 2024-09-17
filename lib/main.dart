@@ -1,5 +1,5 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
-// ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
+// ToDo is a simple application using layouts and widgets. Step 2- states.
 import 'package:flutter/material.dart';
 
 void main() {
