@@ -1,5 +1,6 @@
-// Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
-// ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
+//Flutter project created by Filip Drincic, e-mail: gusfildri@student.gu.se. Course TIG-333-VT at GU
+//ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,19 +14,19 @@ class MyApp extends StatelessWidget {
       title: 'TIG333 TODO',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200], // Changes background color here
+         scaffoldBackgroundColor: Colors.grey[200], // Changes background color here
       ),
-      home: TodoListScreen(),
+      home: TodoListScreen(),   
     );
   }
 }
 
 class TodoListScreen extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.lightBlue,
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: Colors.lightBlue,
         title: Text(
           'TIG333 TODO',
           style: TextStyle(
@@ -41,12 +42,12 @@ class TodoListScreen extends StatelessWidget {
             },
           ),
         ],
-      ),
-      body: ListView(
+    ),
+     body: ListView(
         children: [
           _buildTodoItem('Write a book', false),
           _buildTodoItem('Do homework', false),
-          _buildTodoItem('Tidy room', true), // Visually done
+          _buildTodoItem('Tidy room', true), // visually done
           _buildTodoItem('Watch TV', false),
           _buildTodoItem('Nap', false),
           _buildTodoItem('Shop groceries', false),
@@ -70,7 +71,7 @@ class TodoListScreen extends StatelessWidget {
     return ListTile(
       leading: Checkbox(
         value: isDone,
-        activeColor: Colors.lightBlue, // Changes the checkbox color to light blue from default
+        activeColor: Colors.lightBlue,  // Changes the checkbox color to light blue from default
         onChanged: (value) {
           // No functionality in step 1
         },
@@ -140,3 +141,11 @@ class AddTodoScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+      
+
