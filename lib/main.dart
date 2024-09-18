@@ -1,6 +1,6 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
 // ToDo is a simple application using layouts and widgets. Step 2-StatefulWidget for handling of states
-// Add additional snackbar for add and remove "ToDo" task
+// Add additional snackbar for add and remove "ToDo" tasks
 
 import 'package:flutter/material.dart';
 
@@ -43,7 +43,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     setState(() {
       _todos.add(Todo(title: title, isDone: false));
     });
-    // Visa Snackbar när en Todo läggs till
+    // Show "snackbar" when you create a new ToDo task
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Todo "$title" added!'),
@@ -64,7 +64,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       _todos.removeAt(index);
     });
 
-    // Fördröj visningen av Snackbar efter att setState är klar
+    // Delay the "Snackbar" when a state is finished
     Future.delayed(Duration(milliseconds: 100), () {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -91,7 +91,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
-              // Placeholder för filterknapp
+              // Placeholder for filter button (optional)
             },
           ),
         ],
