@@ -96,22 +96,12 @@ Future<String> getApiKey() async {
         throw Exception('Failed to fetch API key: Timeout');
       },
     );
-
-    // Logga hela API-svaret
+  // Logga hela responsen för att se vad API:et skickar
     print('API response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      // Logga nyckeln från JSON-svaret
-      var key = jsonDecode(response.body)['key'];
-      print('Extracted API Key: $key');
-
-      // Kontrollera om nyckeln verkligen är en sträng
-      if (key is String) {
-        print('API Key is a valid String');
-        return key;
-      } else {
-        throw Exception('API Key is not a String');
-      }
+      // Returnera strängen direkt eftersom den inte är JSON
+      return response.body.trim();  // Trim för att ta bort extra mellanslag eller radbrytningar
     } else {
       throw Exception('Failed to fetch API key');
     }
@@ -121,6 +111,7 @@ Future<String> getApiKey() async {
   }
 }
 
+    
 
   // Funktion för att hämta Todos
  Future<List<Todo>> fetchTodos(String apiKey) async {
@@ -150,6 +141,7 @@ void _showErrorSnackbar(String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
+      duration: Duration(seconds: 5),
       backgroundColor: Colors.red,
     ),
   );
