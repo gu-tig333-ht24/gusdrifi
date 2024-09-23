@@ -1,5 +1,7 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
-// ToDo is a simple application using layouts and widgets. See ListViews och Containers in Flutter
+// ToDo is a simple application using layouts and widgets. Step 2-StatefulWidget for handling of states
+// Add additional snackbar for add and remove "ToDo" tasks
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -13,14 +15,66 @@ class MyApp extends StatelessWidget {
       title: 'TIG333 TODO',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.grey[200], // Changes background color here
+        scaffoldBackgroundColor: Colors.grey[200],
       ),
       home: TodoListScreen(),
     );
   }
 }
 
-class TodoListScreen extends StatelessWidget {
+class TodoListScreen extends StatefulWidget {
+  @override
+  _TodoListScreenState createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  List<Todo> _todos = [
+    Todo(title: 'Write a book', isDone: false),
+    Todo(title: 'Do homework', isDone: false),
+    Todo(title: 'Tidy room', isDone: true),
+    Todo(title: 'Watch TV', isDone: false),
+    Todo(title: 'Nap', isDone: false),
+    Todo(title: 'Shop groceries', isDone: false),
+    Todo(title: 'Have fun', isDone: false),
+    Todo(title: 'Meditate', isDone: false),
+  ];
+
+  void _addTodoItem(String title) {
+    setState(() {
+      _todos.add(Todo(title: title, isDone: false));
+    });
+    // Show "snackbar" when you create a new ToDo task
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Todo "$title" added!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _toggleTodoDone(int index) {
+    setState(() {
+      _todos[index].isDone = !_todos[index].isDone;
+    });
+  }
+
+  void _removeTodoItem(int index) {
+    String removedTodoTitle = _todos[index].title;
+    setState(() {
+      _todos.removeAt(index);
+    });
+
+    // Delay the "Snackbar" when a state is finished
+    Future.delayed(Duration(milliseconds: 100), () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Todo "$removedTodoTitle" removed!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,28 +91,24 @@ class TodoListScreen extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {
-              // Placeholder for filter button (no functionality in step 1)
+              // Placeholder for filter button (optional)
             },
           ),
         ],
       ),
-      body: ListView(
-        children: [
-          _buildTodoItem('Write a book', false),
-          _buildTodoItem('Do homework', false),
-          _buildTodoItem('Tidy room', true), // Visually done
-          _buildTodoItem('Watch TV', false),
-          _buildTodoItem('Nap', false),
-          _buildTodoItem('Shop groceries', false),
-          _buildTodoItem('Have fun', false),
-          _buildTodoItem('Meditate', false),
-        ],
+      body: ListView.builder(
+        itemCount: _todos.length,
+        itemBuilder: (context, index) {
+          return _buildTodoItem(_todos[index], index);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddTodoScreen()),
+            MaterialPageRoute(
+              builder: (context) => AddTodoScreen(onAddTodo: _addTodoItem),
+            ),
           );
         },
         child: Icon(Icons.add),
@@ -66,25 +116,25 @@ class TodoListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTodoItem(String title, bool isDone) {
+  Widget _buildTodoItem(Todo todo, int index) {
     return ListTile(
       leading: Checkbox(
-        value: isDone,
-        activeColor: Colors.lightBlue, // Changes the checkbox color to light blue from default
+        value: todo.isDone,
+        activeColor: Colors.lightBlue,
         onChanged: (value) {
-          // No functionality in step 1
+          _toggleTodoDone(index);
         },
       ),
       title: Text(
-        title,
+        todo.title,
         style: TextStyle(
-          decoration: isDone ? TextDecoration.lineThrough : null,
+          decoration: todo.isDone ? TextDecoration.lineThrough : null,
         ),
       ),
       trailing: IconButton(
         icon: Icon(Icons.close),
         onPressed: () {
-          // No functionality in step 1
+          _removeTodoItem(index);
         },
       ),
     );
@@ -93,6 +143,9 @@ class TodoListScreen extends StatelessWidget {
 
 class AddTodoScreen extends StatelessWidget {
   final TextEditingController _controller = TextEditingController();
+  final Function(String) onAddTodo;
+
+  AddTodoScreen({required this.onAddTodo});
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +182,10 @@ class AddTodoScreen extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // No functionality in step 1. Will be added later
+                  if (_controller.text.isNotEmpty) {
+                    onAddTodo(_controller.text);
+                    Navigator.pop(context);
+                  }
                 },
                 child: Text('+ ADD'),
               ),
@@ -139,4 +195,14 @@ class AddTodoScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class Todo {
+  String title;
+  bool isDone;
+
+  Todo({
+    required this.title,
+    this.isDone = false,
+  });
 }
