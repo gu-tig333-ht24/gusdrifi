@@ -1,7 +1,7 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
-// ToDo is a simple application using layouts and widgets. Step 2-StatefulWidget for handling of states
-// Add additional snackbar for add and remove "ToDo" tasks
-// Step 3 using http API 
+// Step-1: ToDo is a simple application using layouts and widgets. 
+// Step-2: StatefulWidget for handling of states.Additional snackbar used for add and remove "ToDo" tasks
+// Step-3: Using simple API from https://todoapp-api.apps.k8s.gu.se/ to fetch and modify data
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -61,16 +61,14 @@ class _TodoListScreenState extends State<TodoListScreen> {
     super.initState();
     _initializeData();
   }
-
-  // Hämta API-nyckel och todos
-  Future<void> _initializeData() async {
-    try {
-      _apiKey = await getApiKey();  // Hämta API-nyckeln
-      _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster
-      setState(() {});
-    } catch (e) {
-      print('Failed to fetch from API, using fallback todos: $e');
-    
+// Hämta API-nyckel och todos
+Future<void> _initializeData() async {
+  try {
+    _apiKey = await getApiKey();  // Hämta API-nyckeln
+    _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster
+  } catch (e) {
+    print('Failed to fetch from API, using fallback todos: $e');
+  
     // Använd statiska Todos från Steg 2 om API-anrop misslyckas
     _todos = [
       Todo(id: '1', title: 'Write a book', done: false),
@@ -84,8 +82,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
     ];
   } finally {
     setState(() {});  // Uppdatera UI oavsett om anrop lyckas eller ej
-    }
   }
+}
 
   // Funktion för att hämta API-nyckeln
 Future<String> getApiKey() async {
@@ -112,7 +110,6 @@ Future<String> getApiKey() async {
 }
 
     
-
   // Funktion för att hämta Todos
  Future<List<Todo>> fetchTodos(String apiKey) async {
   try {
@@ -124,15 +121,18 @@ Future<String> getApiKey() async {
         throw Exception('Failed to fetch todos: Timeout');
       },
     );
+  // Logga hela svaret för att se vad API:et returnerar
+    print('Todo API response body: ${response.body}');
+    print('Status code: ${response.statusCode}');
 
     if (response.statusCode == 200) {
-      List todosJson = jsonDecode(response.body);
-      return todosJson.map((json) => Todo.fromJson(json)).toList();
+      List todosJson = jsonDecode(response.body);  // Konvertera JSON-svaret till en lista
+      return todosJson.map((json) => Todo.fromJson(json)).toList(); // Mappa JSON-data till Todo-objekt
     } else {
       throw Exception('Failed to load todos');
     }
   } catch (e) {
-     _showErrorSnackbar('Failed to fetch API key');
+      _showErrorSnackbar('Error fetching todos: $e');
     throw Exception('Error fetching todos: $e');
   }
 }
@@ -217,7 +217,11 @@ void _showErrorSnackbar(String message) {
         centerTitle: true,
       ),
       body: _todos.isEmpty
-          ? Center(child: CircularProgressIndicator())  // Visa laddningsindikator om inga todos finns
+          ? Center(
+            child: _apiKey.isEmpty 
+            ?CircularProgressIndicator()  // Visa laddningsindikator om inga todos finns
+            : Text('No todos found. Add your first task!'),  // Visa ett meddelande om listan är tom
+          )
           : ListView.builder(
               itemCount: _todos.length,
               itemBuilder: (context, index) {
