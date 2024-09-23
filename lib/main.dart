@@ -69,24 +69,58 @@ class _TodoListScreenState extends State<TodoListScreen> {
       _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster
       setState(() {});
     } catch (e) {
-      print('Failed to initialize data: $e');
+      print('Failed to fetch from API, using fallback todos: $e');
+    
+    // Använd statiska Todos från Steg 2 om API-anrop misslyckas
+    _todos = [
+      Todo(id: '1', title: 'Write a book', done: false),
+      Todo(id: '2', title: 'Do homework', done: false),
+      Todo(id: '3', title: 'Tidy room', done: true),
+      Todo(id: '4', title: 'Watch TV', done: false),
+      Todo(id: '5', title: 'Nap', done: false),
+      Todo(id: '6', title: 'Shop groceries', done: false),
+      Todo(id: '7', title: 'Have fun', done: false),
+      Todo(id: '8', title: 'Meditate', done: false),
+    ];
+  } finally {
+    setState(() {});  // Uppdatera UI oavsett om anrop lyckas eller ej
     }
   }
 
   // Funktion för att hämta API-nyckeln
-  Future<String> getApiKey() async {
-    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register'));
+Future<String> getApiKey() async {
+  try {
+    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
+      Duration(seconds: 10),
+      onTimeout: () {
+        // Kasta ett undantag om anropet tar för lång tid
+        throw Exception('Failed to fetch API key: Timeout');
+      },
+    );
 
     if (response.statusCode == 200) {
       return jsonDecode(response.body)['key'];
     } else {
       throw Exception('Failed to fetch API key');
     }
+  } catch (e) {
+     _showErrorSnackbar('Failed to fetch API key');
+    throw Exception('Error fetching API key: $e');
   }
+}
+
 
   // Funktion för att hämta Todos
-  Future<List<Todo>> fetchTodos(String apiKey) async {
-    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'));
+ Future<List<Todo>> fetchTodos(String apiKey) async {
+  try {
+    final response = await http.get(
+      Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'),
+    ).timeout(
+      Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Failed to fetch todos: Timeout');
+      },
+    );
 
     if (response.statusCode == 200) {
       List todosJson = jsonDecode(response.body);
@@ -94,7 +128,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
     } else {
       throw Exception('Failed to load todos');
     }
+  } catch (e) {
+     _showErrorSnackbar('Failed to fetch API key');
+    throw Exception('Error fetching todos: $e');
   }
+}
+
+void _showErrorSnackbar(String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
 
   // Funktion för att lägga till en ny Todo
   Future<void> addTodo(String title) async {
@@ -105,8 +152,13 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      _todos = await fetchTodos(_apiKey);  // Uppdatera listan genom att hämta alla Todos på nytt
       setState(() {});
+     // Visa Snackbar för att bekräfta att Todo har lagts till
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Todo "$title" added')),
+    );
+
     } else {
       throw Exception('Failed to add todo');
     }
@@ -137,6 +189,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
     if (response.statusCode == 200) {
       _todos = await fetchTodos(_apiKey);  // Uppdatera listan
       setState(() {});
+     // Visa Snackbar för att bekräfta att Todo har tagits bort
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Todo removed')),
+    ); 
     } else {
       throw Exception('Failed to delete todo');
     }
@@ -213,14 +269,25 @@ class _TodoListScreenState extends State<TodoListScreen> {
           actions: <Widget>[
             ElevatedButton(
               child: Text('ADD'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                addTodo(_textFieldController.text);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+              onPressed: () async {
+              if (_textFieldController.text.isNotEmpty) {
+                // Lägg till den nya Todo-posten genom att använda addTodo-funktionen
+                await addTodo(_textFieldController.text);
+                Navigator.of(context).pop(); // Stäng dialogrutan efter att Todo har lagts till
+              } else {
+                // Visa ett felmeddelande om fältet är tomt
+            ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Todo title cannot be empty'),
+                    backgroundColor: Colors.red,
+             ),
+                );
+              }
+            },
+          ),
+        ],
+      );
+    },
+  );
+ }
 }
