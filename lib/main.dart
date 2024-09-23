@@ -1,8 +1,11 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
 // ToDo is a simple application using layouts and widgets. Step 2-StatefulWidget for handling of states
 // Add additional snackbar for add and remove "ToDo" tasks
+// Step 3 using http API 
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MyApp());
@@ -22,59 +25,124 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Modell för en Todo
+class Todo {
+  String id;
+  String title;
+  bool done;
+
+  Todo({
+    required this.id,
+    required this.title,
+    required this.done,
+  });
+
+  // Från JSON till Todo
+  factory Todo.fromJson(Map<String, dynamic> json) {
+    return Todo(
+      id: json['id'],
+      title: json['title'],
+      done: json['done'],
+    );
+  }
+}
+
 class TodoListScreen extends StatefulWidget {
   @override
   _TodoListScreenState createState() => _TodoListScreenState();
 }
 
 class _TodoListScreenState extends State<TodoListScreen> {
-  List<Todo> _todos = [
-    Todo(title: 'Write a book', isDone: false),
-    Todo(title: 'Do homework', isDone: false),
-    Todo(title: 'Tidy room', isDone: true),
-    Todo(title: 'Watch TV', isDone: false),
-    Todo(title: 'Nap', isDone: false),
-    Todo(title: 'Shop groceries', isDone: false),
-    Todo(title: 'Have fun', isDone: false),
-    Todo(title: 'Meditate', isDone: false),
-  ];
+  List<Todo> _todos = [];
+  String _apiKey = '';
 
-  void _addTodoItem(String title) {
-    setState(() {
-      _todos.add(Todo(title: title, isDone: false));
-    });
-    // Show "snackbar" when you create a new ToDo task
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Todo "$title" added!'),
-        duration: Duration(seconds: 2),
-      ),
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  // Hämta API-nyckel och todos
+  Future<void> _initializeData() async {
+    try {
+      _apiKey = await getApiKey();  // Hämta API-nyckeln
+      _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster
+      setState(() {});
+    } catch (e) {
+      print('Failed to initialize data: $e');
+    }
+  }
+
+  // Funktion för att hämta API-nyckeln
+  Future<String> getApiKey() async {
+    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['key'];
+    } else {
+      throw Exception('Failed to fetch API key');
+    }
+  }
+
+  // Funktion för att hämta Todos
+  Future<List<Todo>> fetchTodos(String apiKey) async {
+    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'));
+
+    if (response.statusCode == 200) {
+      List todosJson = jsonDecode(response.body);
+      return todosJson.map((json) => Todo.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load todos');
+    }
+  }
+
+  // Funktion för att lägga till en ny Todo
+  Future<void> addTodo(String title) async {
+    final response = await http.post(
+      Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'title': title, 'done': false}),
     );
+
+    if (response.statusCode == 200) {
+      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      setState(() {});
+    } else {
+      throw Exception('Failed to add todo');
+    }
   }
 
-  void _toggleTodoDone(int index) {
-    setState(() {
-      _todos[index].isDone = !_todos[index].isDone;
-    });
+  // Funktion för att uppdatera en befintlig Todo
+  Future<void> updateTodo(String id, String title, bool done) async {
+    final response = await http.put(
+      Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'title': title, 'done': done}),
+    );
+
+    if (response.statusCode == 200) {
+      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      setState(() {});
+    } else {
+      throw Exception('Failed to update todo');
+    }
   }
 
-  void _removeTodoItem(int index) {
-    String removedTodoTitle = _todos[index].title;
-    setState(() {
-      _todos.removeAt(index);
-    });
+  // Funktion för att ta bort en Todo
+  Future<void> deleteTodo(String id) async {
+    final response = await http.delete(
+      Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$_apiKey'),
+    );
 
-    // Delay the "Snackbar" when a state is finished
-    Future.delayed(Duration(milliseconds: 100), () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Todo "$removedTodoTitle" removed!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    });
+    if (response.statusCode == 200) {
+      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      setState(() {});
+    } else {
+      throw Exception('Failed to delete todo');
+    }
   }
 
+  // Bygg Todo-listan
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,122 +155,72 @@ class _TodoListScreenState extends State<TodoListScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              // Placeholder for filter button (optional)
-            },
-          ),
-        ],
       ),
-      body: ListView.builder(
-        itemCount: _todos.length,
-        itemBuilder: (context, index) {
-          return _buildTodoItem(_todos[index], index);
-        },
-      ),
+      body: _todos.isEmpty
+          ? Center(child: CircularProgressIndicator())  // Visa laddningsindikator om inga todos finns
+          : ListView.builder(
+              itemCount: _todos.length,
+              itemBuilder: (context, index) {
+                return _buildTodoItem(_todos[index]);
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddTodoScreen(onAddTodo: _addTodoItem),
-            ),
-          );
+          _displayAddTodoDialog(context);
         },
         child: Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildTodoItem(Todo todo, int index) {
+  // Bygg en Todo-item
+  Widget _buildTodoItem(Todo todo) {
     return ListTile(
       leading: Checkbox(
-        value: todo.isDone,
-        activeColor: Colors.lightBlue,
+        value: todo.done,
         onChanged: (value) {
-          _toggleTodoDone(index);
+          updateTodo(todo.id, todo.title, value!);
         },
       ),
       title: Text(
         todo.title,
         style: TextStyle(
-          decoration: todo.isDone ? TextDecoration.lineThrough : null,
+          decoration: todo.done ? TextDecoration.lineThrough : null,
         ),
       ),
       trailing: IconButton(
-        icon: Icon(Icons.close),
+        icon: Icon(Icons.delete),
         onPressed: () {
-          _removeTodoItem(index);
+          deleteTodo(todo.id);
         },
       ),
     );
   }
-}
 
-class AddTodoScreen extends StatelessWidget {
-  final TextEditingController _controller = TextEditingController();
-  final Function(String) onAddTodo;
+  // Visa en dialog för att lägga till en ny Todo
+  Future<void> _displayAddTodoDialog(BuildContext context) async {
+    TextEditingController _textFieldController = TextEditingController();
 
-  AddTodoScreen({required this.onAddTodo});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.lightBlue,
-        title: Text(
-          'TIG333 TODO',
-          style: TextStyle(
-            color: Colors.white,
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Add New Todo'),
+          content: TextField(
+            controller: _textFieldController,
+            decoration: InputDecoration(hintText: "Enter new todo"),
           ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText: 'What are you going to do?',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_controller.text.isNotEmpty) {
-                    onAddTodo(_controller.text);
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text('+ ADD'),
-              ),
+          actions: <Widget>[
+            ElevatedButton(
+              child: Text('ADD'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                addTodo(_textFieldController.text);
+              },
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
-}
-
-class Todo {
-  String title;
-  bool isDone;
-
-  Todo({
-    required this.title,
-    this.isDone = false,
-  });
 }
