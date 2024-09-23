@@ -93,18 +93,30 @@ Future<String> getApiKey() async {
     final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
       Duration(seconds: 10),
       onTimeout: () {
-        // Kasta ett undantag om anropet tar för lång tid
         throw Exception('Failed to fetch API key: Timeout');
       },
     );
 
+    // Logga hela API-svaret
+    print('API response body: ${response.body}');
+
     if (response.statusCode == 200) {
-      return jsonDecode(response.body)['key'];
+      // Logga nyckeln från JSON-svaret
+      var key = jsonDecode(response.body)['key'];
+      print('Extracted API Key: $key');
+
+      // Kontrollera om nyckeln verkligen är en sträng
+      if (key is String) {
+        print('API Key is a valid String');
+        return key;
+      } else {
+        throw Exception('API Key is not a String');
+      }
     } else {
       throw Exception('Failed to fetch API key');
     }
   } catch (e) {
-     _showErrorSnackbar('Failed to fetch API key');
+    _showErrorSnackbar('Failed to fetch API key: $e');
     throw Exception('Error fetching API key: $e');
   }
 }
@@ -289,5 +301,5 @@ void _showErrorSnackbar(String message) {
       );
     },
   );
- }
+}
 }
