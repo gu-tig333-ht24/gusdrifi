@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -61,15 +62,36 @@ class _TodoListScreenState extends State<TodoListScreen> {
     super.initState();
     _initializeData();
   }
+
 // Hämta API-nyckel och todos
 Future<void> _initializeData() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Försök att hämta den sparade API-nyckeln
+  _apiKey = prefs.getString('api_key') ?? '';
+  print('Loaded API key from SharedPreferences: $_apiKey');
+
+  // Om ingen API-nyckel är sparad, hämta en ny nyckel från API:et
+  if (_apiKey.isEmpty) {
+    print('No API key found, fetching a new one...');
+    _apiKey = await getApiKey();
+    print('New API key fetched: $_apiKey');
+
+    // Spara den nya API-nyckeln i SharedPreferences och logga resultatet
+    bool isSaved = await prefs.setString('api_key', _apiKey);
+    if (isSaved) {
+      print('New API key saved to SharedPreferences');
+    } else {
+      print('Failed to save API key to SharedPreferences');
+    }
+  }
+
   try {
-    _apiKey = await getApiKey();  // Hämta API-nyckeln
-    _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster
+    _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster med API-nyckeln
+    print('Fetched todos: $_todos');
   } catch (e) {
     print('Failed to fetch from API, using fallback todos: $e');
-  
-    // Använd statiska Todos från Steg 2 om API-anrop misslyckas
+    // Om API-anropet misslyckas, använd fallback-data
     _todos = [
       Todo(id: '1', title: 'Write a book', done: false),
       Todo(id: '2', title: 'Do homework', done: false),
@@ -81,9 +103,10 @@ Future<void> _initializeData() async {
       Todo(id: '8', title: 'Meditate', done: false),
     ];
   } finally {
-    setState(() {});  // Uppdatera UI oavsett om anrop lyckas eller ej
+    setState(() {});  // Uppdatera UI
   }
 }
+
 
   // Funktion för att hämta API-nyckeln
 Future<String> getApiKey() async {
