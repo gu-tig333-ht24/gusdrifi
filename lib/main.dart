@@ -1,12 +1,13 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
 // Step-1: ToDo is a simple application using layouts and widgets. 
 // Step-2: StatefulWidget for handling of states.Additional snackbar used for add and remove "ToDo" tasks
-// Step-3: Using simple API from https://todoapp-api.apps.k8s.gu.se/ to fetch and modify data
+// Step-3: Using simple API from https://todoapp-api.apps.k8s.gu.se/ to fetch and modify data (ToDo items)
+// Use Flutter secure storage instead for shared preferences due to better security (save API keys)
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() {
   runApp(MyApp());
@@ -55,6 +56,7 @@ class TodoListScreen extends StatefulWidget {
 
 class _TodoListScreenState extends State<TodoListScreen> {
   List<Todo> _todos = [];
+  final FlutterSecureStorage storage = FlutterSecureStorage();
   String _apiKey = '';
 
   @override
@@ -63,36 +65,33 @@ class _TodoListScreenState extends State<TodoListScreen> {
     _initializeData();
   }
 
-// Hämta API-nyckel och todos
-Future<void> _initializeData() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
+  // Fetch API-key and todo-s
+  Future<void> _initializeData() async {
+    // Try to load saved API key from Secure Storage
+    _apiKey = await storage.read(key: 'api_key') ?? '';
+    print('Loaded API key from secure storage: $_apiKey');   //for troubleshooting purpose
 
-  // Försök att hämta den sparade API-nyckeln
-  _apiKey = prefs.getString('api_key') ?? '';
-  print('Loaded API key from SharedPreferences: $_apiKey');
-
-  // Om ingen API-nyckel är sparad, hämta en ny nyckel från API:et
-  if (_apiKey.isEmpty) {
-    print('No API key found, fetching a new one...');
-    _apiKey = await getApiKey();
-    print('New API key fetched: $_apiKey');
-
-    // Spara den nya API-nyckeln i SharedPreferences och logga resultatet
-    bool isSaved = await prefs.setString('api_key', _apiKey);
-    if (isSaved) {
-      print('New API key saved to SharedPreferences');
+    if (_apiKey.isNotEmpty) {
+      try {
+        _todos = await fetchTodos(_apiKey);
+      } catch (e) {
+        print('Error fetching todos: $e');
+        _todos = _getFallbackTodos();
+      }
     } else {
-      print('Failed to save API key to SharedPreferences');
+      // If no key is saved,fetch and save a new one from the API
+      print('No API key found, fetching a new one...');
+      _apiKey = await getApiKey();
+      await storage.write(key: 'api_key', value: _apiKey);
+      print('Fetched and saved new API key: $_apiKey');
+      _todos = await fetchTodos(_apiKey);  // Fetch Todo-items with API-key
     }
-  }
 
-  try {
-    _todos = await fetchTodos(_apiKey);  // Hämta Todo-poster med API-nyckeln
-    print('Fetched todos: $_todos');
-  } catch (e) {
-    print('Failed to fetch from API, using fallback todos: $e');
-    // Om API-anropet misslyckas, använd fallback-data
-    _todos = [
+    setState(() {});
+  }
+  // If failed to fetch from API, use fallback-data
+  List<Todo> _getFallbackTodos() {
+    return [
       Todo(id: '1', title: 'Write a book', done: false),
       Todo(id: '2', title: 'Do homework', done: false),
       Todo(id: '3', title: 'Tidy room', done: true),
@@ -102,73 +101,67 @@ Future<void> _initializeData() async {
       Todo(id: '7', title: 'Have fun', done: false),
       Todo(id: '8', title: 'Meditate', done: false),
     ];
-  } finally {
-    setState(() {});  // Uppdatera UI
   }
-}
-
 
   // Funktion för att hämta API-nyckeln
-Future<String> getApiKey() async {
-  try {
-    final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
-      Duration(seconds: 10),
-      onTimeout: () {
-        throw Exception('Failed to fetch API key: Timeout');
-      },
-    );
-  // Logga hela responsen för att se vad API:et skickar
-    print('API response body: ${response.body}');
+  Future<String> getApiKey() async {
+    try {
+      final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Failed to fetch API key: Timeout');
+        },
+      );
 
-    if (response.statusCode == 200) {
-      // Returnera strängen direkt eftersom den inte är JSON
-      return response.body.trim();  // Trim för att ta bort extra mellanslag eller radbrytningar
-    } else {
-      throw Exception('Failed to fetch API key');
+      print('API response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return response.body.trim(); // Trim för att ta bort extra mellanslag eller radbrytningar
+      } else {
+        throw Exception('Failed to fetch API key');
+      }
+    } catch (e) {
+      _showErrorSnackbar('Failed to fetch API key: $e');
+      throw Exception('Error fetching API key: $e');
     }
-  } catch (e) {
-    _showErrorSnackbar('Failed to fetch API key: $e');
-    throw Exception('Error fetching API key: $e');
   }
-}
 
-    
   // Funktion för att hämta Todos
- Future<List<Todo>> fetchTodos(String apiKey) async {
-  try {
-    final response = await http.get(
-      Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'),
-    ).timeout(
-      Duration(seconds: 10),
-      onTimeout: () {
-        throw Exception('Failed to fetch todos: Timeout');
-      },
-    );
-  // Logga hela svaret för att se vad API:et returnerar
-    print('Todo API response body: ${response.body}');
-    print('Status code: ${response.statusCode}');
+  Future<List<Todo>> fetchTodos(String apiKey) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'),
+      ).timeout(
+        Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Failed to fetch todos: Timeout');
+        },
+      );
 
-    if (response.statusCode == 200) {
-      List todosJson = jsonDecode(response.body);  // Konvertera JSON-svaret till en lista
-      return todosJson.map((json) => Todo.fromJson(json)).toList(); // Mappa JSON-data till Todo-objekt
-    } else {
-      throw Exception('Failed to load todos');
-    }
-  } catch (e) {
+      print('Todo API response body: ${response.body}');  //For troubleshooting purpose, to be removed
+      print('Status code: ${response.statusCode}'); //For troubleshooting purpose, to be removed
+
+      if (response.statusCode == 200) {
+        List todosJson = jsonDecode(response.body);
+        return todosJson.map((json) => Todo.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load todos');
+      }
+    } catch (e) {
       _showErrorSnackbar('Error fetching todos: $e');
-    throw Exception('Error fetching todos: $e');
+      throw Exception('Error fetching todos: $e');
+    }
   }
-}
 
-void _showErrorSnackbar(String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      duration: Duration(seconds: 5),
-      backgroundColor: Colors.red,
-    ),
-  );
-}
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 5),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 
   // Funktion för att lägga till en ny Todo
   Future<void> addTodo(String title) async {
@@ -179,13 +172,11 @@ void _showErrorSnackbar(String message) {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey);  // Uppdatera listan genom att hämta alla Todos på nytt
+      _todos = await fetchTodos(_apiKey); // Uppdatera listan genom att hämta alla Todos på nytt
       setState(() {});
-     // Visa Snackbar för att bekräfta att Todo har lagts till
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Todo "$title" added')),
-    );
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Todo "$title" added')),
+      );
     } else {
       throw Exception('Failed to add todo');
     }
@@ -200,7 +191,7 @@ void _showErrorSnackbar(String message) {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      _todos = await fetchTodos(_apiKey); // Uppdatera listan
       setState(() {});
     } else {
       throw Exception('Failed to update todo');
@@ -214,18 +205,17 @@ void _showErrorSnackbar(String message) {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey);  // Uppdatera listan
+      _todos = await fetchTodos(_apiKey); // Uppdatera listan
       setState(() {});
-     // Visa Snackbar för att bekräfta att Todo har tagits bort
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Todo removed')),
-    ); 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Todo removed')),
+      );
     } else {
       throw Exception('Failed to delete todo');
     }
   }
 
-  // Bygg Todo-listan
+  // Build Todo-list
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -233,18 +223,16 @@ void _showErrorSnackbar(String message) {
         backgroundColor: Colors.lightBlue,
         title: Text(
           'TIG333 TODO',
-          style: TextStyle(
-            color: Colors.white,
-          ),
+          style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
       ),
       body: _todos.isEmpty
           ? Center(
-            child: _apiKey.isEmpty 
-            ?CircularProgressIndicator()  // Visa laddningsindikator om inga todos finns
-            : Text('No todos found. Add your first task!'),  // Visa ett meddelande om listan är tom
-          )
+              child: _apiKey.isEmpty
+                  ? CircularProgressIndicator() // Visa laddningsindikator om inga todos finns
+                  : Text('No todos found. Add your first task!'), // Visa ett meddelande om listan är tom
+            )
           : ListView.builder(
               itemCount: _todos.length,
               itemBuilder: (context, index) {
@@ -301,24 +289,22 @@ void _showErrorSnackbar(String message) {
             ElevatedButton(
               child: Text('ADD'),
               onPressed: () async {
-              if (_textFieldController.text.isNotEmpty) {
-                // Lägg till den nya Todo-posten genom att använda addTodo-funktionen
-                await addTodo(_textFieldController.text);
-                Navigator.of(context).pop(); // Stäng dialogrutan efter att Todo har lagts till
-              } else {
-                // Visa ett felmeddelande om fältet är tomt
-            ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Todo title cannot be empty'),
-                    backgroundColor: Colors.red,
-             ),
-                );
-              }
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+                if (_textFieldController.text.isNotEmpty) {
+                  await addTodo(_textFieldController.text);
+                  Navigator.of(context).pop(); // Stäng dialogrutan efter att Todo har lagts till
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Todo title cannot be empty'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
