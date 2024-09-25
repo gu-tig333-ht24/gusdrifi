@@ -1,8 +1,8 @@
 // Flutter project created by Filip Drincic, task for Course TIG-333-VT at GU
 // Step-1: ToDo is a simple application using layouts and widgets. 
-// Step-2: StatefulWidget for handling of states.Additional snackbar used for add and remove "ToDo" tasks
+// Step-2: StatefulWidget for handling of states. Additional snackbar used for add and remove "ToDo" tasks
 // Step-3: Using simple API from https://todoapp-api.apps.k8s.gu.se/ to fetch and modify data (ToDo items)
-// Use Flutter secure storage instead for shared preferences due to better security (save API keys)
+// Use Flutter secure storage instead for shared preferences due to better security (to save API keys)
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Modell för en Todo
+// Model for a Todo
 class Todo {
   String id;
   String title;
@@ -39,7 +39,7 @@ class Todo {
     required this.done,
   });
 
-  // Från JSON till Todo
+  // From JSON to Todo
   factory Todo.fromJson(Map<String, dynamic> json) {
     return Todo(
       id: json['id'],
@@ -103,7 +103,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     ];
   }
 
-  // Funktion för att hämta API-nyckeln
+  // Function for getting the API key
   Future<String> getApiKey() async {
     try {
       final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
@@ -116,7 +116,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       print('API response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return response.body.trim(); // Trim för att ta bort extra mellanslag eller radbrytningar
+        return response.body.trim(); // Trim to remove extra space 
       } else {
         throw Exception('Failed to fetch API key');
       }
@@ -126,7 +126,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     }
   }
 
-  // Funktion för att hämta Todos
+  // Function to get Todos
   Future<List<Todo>> fetchTodos(String apiKey) async {
     try {
       final response = await http.get(
@@ -163,7 +163,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  // Funktion för att lägga till en ny Todo
+  // Function to add a new Todo
   Future<void> addTodo(String title) async {
     final response = await http.post(
       Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$_apiKey'),
@@ -172,7 +172,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey); // Uppdatera listan genom att hämta alla Todos på nytt
+      _todos = await fetchTodos(_apiKey); // Update the list by getting all the Todos again
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Todo "$title" added')),
@@ -182,7 +182,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     }
   }
 
-  // Funktion för att uppdatera en befintlig Todo
+  // Function for updating an existing Todo
   Future<void> updateTodo(String id, String title, bool done) async {
     final response = await http.put(
       Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$_apiKey'),
@@ -191,21 +191,21 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey); // Uppdatera listan
+      _todos = await fetchTodos(_apiKey); // Update the list
       setState(() {});
     } else {
       throw Exception('Failed to update todo');
     }
   }
 
-  // Funktion för att ta bort en Todo
+  // Function for removing a Todo
   Future<void> deleteTodo(String id) async {
     final response = await http.delete(
       Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$_apiKey'),
     );
 
     if (response.statusCode == 200) {
-      _todos = await fetchTodos(_apiKey); // Uppdatera listan
+      _todos = await fetchTodos(_apiKey); // Updates the list
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Todo removed')),
@@ -230,8 +230,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
       body: _todos.isEmpty
           ? Center(
               child: _apiKey.isEmpty
-                  ? CircularProgressIndicator() // Visa laddningsindikator om inga todos finns
-                  : Text('No todos found. Add your first task!'), // Visa ett meddelande om listan är tom
+                  ? CircularProgressIndicator() // Show loading indicator if no Todos exist
+                  : Text('No todos found. Add your first task!'), // Show a message if the list is empty
             )
           : ListView.builder(
               itemCount: _todos.length,
@@ -248,7 +248,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  // Bygg en Todo-item
+  // Build a Todo-item
   Widget _buildTodoItem(Todo todo) {
     return ListTile(
       leading: Checkbox(
@@ -272,7 +272,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  // Visa en dialog för att lägga till en ny Todo
+  // Show a dialogue to add a new Todo
   Future<void> _displayAddTodoDialog(BuildContext context) async {
     TextEditingController _textFieldController = TextEditingController();
 
@@ -291,7 +291,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               onPressed: () async {
                 if (_textFieldController.text.isNotEmpty) {
                   await addTodo(_textFieldController.text);
-                  Navigator.of(context).pop(); // Stäng dialogrutan efter att Todo har lagts till
+                  Navigator.of(context).pop(); // Close the dialogue box after the Todo has been added
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
