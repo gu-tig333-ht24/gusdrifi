@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'todo.dart';
 
 void main() {
   runApp(MyApp());
@@ -28,27 +28,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Model for a Todo
-class Todo {
-  String id;
-  String title;
-  bool done;
-
-  Todo({
-    required this.id,
-    required this.title,
-    required this.done,
-  });
-
-  // From JSON to Todo
-  factory Todo.fromJson(Map<String, dynamic> json) {
-    return Todo(
-      id: json['id'],
-      title: json['title'],
-      done: json['done'],
-    );
-  }
-}
 
 class TodoListScreen extends StatefulWidget {
   @override
@@ -57,7 +36,7 @@ class TodoListScreen extends StatefulWidget {
 
 class _TodoListScreenState extends State<TodoListScreen> {
   List<Todo> _todos = [];
-  final FlutterSecureStorage storage = new FlutterSecureStorage();
+  final FlutterSecureStorage storage = FlutterSecureStorage();
   String _apiKey = '';
 
   @override
@@ -71,20 +50,19 @@ class _TodoListScreenState extends State<TodoListScreen> {
     // Try to load saved API key from Secure Storage
     _apiKey = await storage.read(key: 'api_key') ?? '';
     print('Loaded API key from secure storage: $_apiKey');   //for troubleshooting purpose
-   
+
     if (_apiKey.isNotEmpty) {
       try {
         _todos = await fetchTodos(_apiKey);
       } catch (e) {
         print('Error fetching todos: $e');
         _todos = _getFallbackTodos();
-
       }
     } else {
       // If no key is saved,fetch and save a new one from the API
       print('No API key found, fetching a new one...');
       _apiKey = await getApiKey();
-       await storage.write(key: 'api_key', value: _apiKey);
+      await storage.write(key: 'api_key', value: _apiKey);
       print('Fetched and saved new API key: $_apiKey');
       _todos = await fetchTodos(_apiKey);  // Fetch Todo-items with API-key
     }
@@ -109,7 +87,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Future<String> getApiKey() async {
     try {
       final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/register')).timeout(
-        Duration(seconds: 15),
+        Duration(seconds: 10),
         onTimeout: () {
           throw Exception('Failed to fetch API key: Timeout');
         },
@@ -118,7 +96,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       print('API response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return response.body.trim(); // Trim to remove extra space 
+        return response.body.trim(); // Trim to remove extra space
       } else {
         throw Exception('Failed to fetch API key');
       }
@@ -154,7 +132,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       throw Exception('Error fetching todos: $e');
     }
   }
-//Snackbar message with 5sec delay, 
+
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -250,7 +228,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  // Build a Todo-item
+  // Create a Todo-item
   Widget _buildTodoItem(Todo todo) {
     return ListTile(
       leading: Checkbox(
